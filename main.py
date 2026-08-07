@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Dropout
@@ -9,6 +8,11 @@ from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
+
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    plt = None
 
 st.set_page_config(
     page_title="Titanic Survival Prediction",
@@ -91,6 +95,10 @@ def train_model(model, X_train, y_train, epochs, batch_size):
 
 
 def plot_history(history, title="Training"):
+    if plt is None:
+        st.info("Matplotlib is not available in this environment, so the training chart cannot be displayed.")
+        return
+
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
     ax[0].plot(history.history["loss"], label="train loss")
     ax[0].plot(history.history["val_loss"], label="val loss")
