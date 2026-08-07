@@ -1,12 +1,9 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
 st.set_page_config(
@@ -47,62 +44,35 @@ def preprocess_data(df: pd.DataFrame):
 
 @st.cache_resource
 def build_model(input_dim: int):
-    model = Sequential([
-        Dense(
-            64,
-            activation="relu",
-            input_shape=(input_dim,),
-            kernel_regularizer=tf.keras.regularizers.l2(0.001),
-        ),
-        Dropout(0.3),
-        Dense(32, activation="relu", kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        Dropout(0.3),
-        Dense(16, activation="relu", kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        Dropout(0.2),
-        Dense(1, activation="sigmoid"),
-    ])
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),
-        loss="binary_crossentropy",
-        metrics=["accuracy"],
+    return MLPClassifier(
+        hidden_layer_sizes=(64, 32, 16),
+        activation="relu",
+        solver="adam",
+        alpha=0.001,
+        max_iter=200,
+        early_stopping=True,
+        validation_fraction=0.2,
+        n_iter_no_change=15,
+        random_state=42,
     )
-    return model
 
 
 def train_model(model, X_train, y_train, epochs, batch_size):
-    early_stop = EarlyStopping(
-        monitor="val_loss",
-        patience=15,
-        min_delta=0.001,
-        restore_best_weights=True,
-    )
-    history = model.fit(
-        X_train,
-        y_train,
-        epochs=epochs,
-        batch_size=batch_size,
-        validation_split=0.2,
-        shuffle=True,
-        verbose=0,
-        callbacks=[early_stop],
-    )
+    model.max_iter = epochs
+    model.fit(X_train, y_train, batch_size=batch_size)
+    history = {"loss": model.loss_curve_}
+    if hasattr(model, "validation_scores_"):
+        history["val_accuracy"] = model.validation_scores_
     return history
 
 
 def plot_history(history, title="Training"):
-    history_df = pd.DataFrame(history.history)
-    history_df = history_df.rename(
-        columns={
-            "loss": "Train Loss",
-            "val_loss": "Validation Loss",
-            "accuracy": "Train Accuracy",
-            "val_accuracy": "Validation Accuracy",
-        }
-    )
-
+    history_df = pd.DataFrame(history)
     st.subheader(f"{title} history")
-    st.line_chart(history_df[["Train Loss", "Validation Loss"]])
-    st.line_chart(history_df[["Train Accuracy", "Validation Accuracy"]])
+    if "loss" in history_df.columns:
+        st.line_chart(history_df[["loss"]].rename(columns={"loss": "Loss"}))
+    if "val_accuracy" in history_df.columns:
+        st.line_chart(history_df[["val_accuracy"]].rename(columns={"val_accuracy": "Validation Accuracy"}))
 
 
 def prepare_features(df: pd.DataFrame):
@@ -124,7 +94,7 @@ def predict_passenger(model, scaler, passenger_data: dict):
         passenger_data["IsAlone"],
     ]])
     features_scaled = scaler.transform(features)
-    prob = model.predict(features_scaled, verbose=0)[0, 0]
+    prob = model.predict_proba(features_scaled)[0, 1]
     return float(prob)
 
 
