@@ -9,11 +9,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
 
-try:
-    import matplotlib.pyplot as plt
-except ModuleNotFoundError:
-    plt = None
-
 st.set_page_config(
     page_title="Titanic Survival Prediction",
     page_icon="🚢",
@@ -95,21 +90,19 @@ def train_model(model, X_train, y_train, epochs, batch_size):
 
 
 def plot_history(history, title="Training"):
-    if plt is None:
-        st.info("Matplotlib is not available in this environment, so the training chart cannot be displayed.")
-        return
+    history_df = pd.DataFrame(history.history)
+    history_df = history_df.rename(
+        columns={
+            "loss": "Train Loss",
+            "val_loss": "Validation Loss",
+            "accuracy": "Train Accuracy",
+            "val_accuracy": "Validation Accuracy",
+        }
+    )
 
-    fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-    ax[0].plot(history.history["loss"], label="train loss")
-    ax[0].plot(history.history["val_loss"], label="val loss")
-    ax[0].set_title(f"{title} - Loss")
-    ax[0].legend()
-
-    ax[1].plot(history.history["accuracy"], label="train accuracy")
-    ax[1].plot(history.history["val_accuracy"], label="val accuracy")
-    ax[1].set_title(f"{title} - Accuracy")
-    ax[1].legend()
-    st.pyplot(fig)
+    st.subheader(f"{title} history")
+    st.line_chart(history_df[["Train Loss", "Validation Loss"]])
+    st.line_chart(history_df[["Train Accuracy", "Validation Accuracy"]])
 
 
 def prepare_features(df: pd.DataFrame):
