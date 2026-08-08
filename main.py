@@ -183,7 +183,7 @@ if df is not None:
         st.subheader("Model performance")
         plot_history(st.session_state.history)
 
-        y_pred = (st.session_state.model.predict(X_test_scaled, verbose=0) > 0.5).astype(int)
+        y_pred = (st.session_state.model.predict(X_test_scaled) > 0.5).astype(int)
         accuracy = accuracy_score(y_test, y_pred)
         st.metric("Test accuracy", f"{accuracy:.4f}")
         st.write(pd.DataFrame(classification_report(y_test, y_pred, output_dict=True)).transpose())
