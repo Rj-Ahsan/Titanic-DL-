@@ -59,7 +59,8 @@ def build_model(input_dim: int):
 
 def train_model(model, X_train, y_train, epochs, batch_size):
     model.max_iter = epochs
-    model.fit(X_train, y_train, batch_size=batch_size)
+    model.set_params(batch_size=batch_size)
+    model.fit(X_train, y_train)
     history = {"loss": model.loss_curve_}
     if hasattr(model, "validation_scores_"):
         history["val_accuracy"] = model.validation_scores_
